@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "command": "waf",
+  "echoCommand": true,
+  "isShellCommand": true,
+  "suppressTaskName": false,
+  "options": {
+    "cwd": "${workspaceRoot}"
+  },
+  "tasks": [
+    {
+      "taskName": "configure",
+      "args": ["--disable-docs"]
+    },
+    {
+      "taskName": "clean",
+      "args": []
+    },
+    {
+      "taskName": "build",
+      "args": []
+    }
+  ],
+  "showOutput": "always"
+}

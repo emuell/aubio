@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Aubiopitch (Windows)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/build/examples/aubiopitch.exe",
+      "args": ["${workspaceRoot}/tests/audio/SineSweep.wav"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "externalConsole": false
+    },
+    {
+      "name": "Attach (Windows)",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command.pickProcess}"
+    }
+  ]
+}
