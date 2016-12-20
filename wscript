@@ -71,9 +71,6 @@ def options(ctx):
     add_option_enable_disable(ctx, 'memcpy', default = True,
             help_str = 'use memcpy hacks (default)',
             help_disable_str = 'do not use memcpy hacks')
-    add_option_enable_disable(ctx, 'sse_intrinsics', default = True,
-            help_str = 'use SSE2 intrinsics on intel platforms (default)',
-            help_disable_str = 'do not use SSE2 intrinsics')
     add_option_enable_disable(ctx, 'double', default = False,
             help_str = 'compile in double precision mode',
             help_disable_str = 'compile in single precision mode (default)')
@@ -127,14 +124,6 @@ def configure(ctx):
     if ctx.options.target_platform:
         target_platform = ctx.options.target_platform
     ctx.env['DEST_OS'] = target_platform
-
-    if target_platform in [ 'win32', 'win64', 'darwin']:
-        # optionally use xmmintrin.h
-        if (ctx.options.enable_sse_intrinsics == True):
-            ctx.check(header_name='xmmintrin.h')
-            ctx.define('HAVE_SSE_INTRINSICS', 1)
-        else:
-            ctx.msg('Checking for xmmintrin.h', 'no (disabled)')
 
     if ctx.env.CC_NAME != 'msvc':
         ctx.env.CFLAGS += ['-g', '-Wall', '-Wextra']
