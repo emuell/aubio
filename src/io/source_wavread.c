@@ -277,7 +277,9 @@ aubio_source_wavread_t * new_aubio_source_wavread(const char_t * path, uint_t sa
 
   s->duration = duration;
 
-  s->short_output = (unsigned char *)calloc(s->blockalign, AUBIO_WAVREAD_BUFSIZE);
+  s->short_output = (unsigned char *)AUBIO_MALLOC(s->blockalign * AUBIO_WAVREAD_BUFSIZE);
+  AUBIO_MEMSET(s->short_output, 0, s->blockalign * AUBIO_WAVREAD_BUFSIZE);
+  
   s->read_index = 0;
   s->read_samples = 0;
   s->eof = 0;
