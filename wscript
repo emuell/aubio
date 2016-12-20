@@ -119,7 +119,7 @@ def configure(ctx):
     ctx.check(header_name='stdarg.h')
     ctx.check(header_name='getopt.h', mandatory = False)
     ctx.check(header_name='unistd.h', mandatory = False)
-
+    
     target_platform = sys.platform
     if ctx.options.target_platform:
         target_platform = ctx.options.target_platform
@@ -128,9 +128,12 @@ def configure(ctx):
     if ctx.env.CC_NAME != 'msvc':
         ctx.env.CFLAGS += ['-g', '-Wall', '-Wextra']
     else:
-        ctx.env.CFLAGS += ['/W4', '/MD']
-        ctx.env.CFLAGS += ['/D_CRT_SECURE_NO_WARNINGS']
-
+        ctx.env.CFLAGS += ['/Zi', '/FS']
+        ctx.env.CFLAGS += ['/Ox']
+        ctx.env.CFLAGS += ['/W4', '/D_CRT_SECURE_NO_WARNINGS']
+        ctx.env.CFLAGS += ['/MD']
+        ctx.env.LINKFLAGS += ['/DEBUG']
+        
     ctx.check_cc(lib='m', uselib_store='M', mandatory=False)
 
     if target_platform not in ['win32', 'win64']:
