@@ -143,6 +143,7 @@ def configure(ctx):
             # set optimization level 
             ctx.env.CFLAGS += ['-O2']
     else:
+<<<<<<< HEAD
         # enable debug symbols
         ctx.env.CFLAGS += ['/Z7', '/FS']
         ctx.env.LINKFLAGS += ['/DEBUG', '/INCREMENTAL:NO']
@@ -155,6 +156,13 @@ def configure(ctx):
         else:
             assert(ctx.options.build_type == "debug")
             ctx.env.CFLAGS += ['/MDd']
+=======
+        ctx.env.CFLAGS += ['/Zi', '/FS']
+        ctx.env.CFLAGS += ['/Ox']
+        ctx.env.CFLAGS += ['/W4', '/D_CRT_SECURE_NO_WARNINGS']
+        ctx.env.CFLAGS += ['/MD']
+        ctx.env.LINKFLAGS += ['/DEBUG']
+>>>>>>> 102e432... - add debug symbols to msvc builds
         
     ctx.check_cc(lib='m', uselib_store='M', mandatory=False)
 
