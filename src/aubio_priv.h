@@ -70,6 +70,10 @@
 #include <stdarg.h>
 #endif
 
+#ifdef HAVE_SSE_INTRINSICS
+#include <xmmintrin.h>
+#endif
+
 #ifdef HAVE_ACCELERATE
 #define HAVE_ATLAS 1
 #include <Accelerate/Accelerate.h>
@@ -140,14 +144,27 @@
  */
 
 /* Memory management */
+#ifdef HAVE_SSE_INTRINSICS
+/* aligned calloc impl */
+inline void* _mm_calloc(size_t _Siz, size_t _Al) {
+  void* ret = _mm_malloc(_Siz, _Al);
+  if (ret) memset(ret, 0, _Siz);
+  return ret;
+}
+#define AUBIO_MALLOC(_n)             _mm_malloc(_n, 16)
+#define AUBIO_NEW(_t)                (_t*)_mm_calloc(sizeof(_t), 16)
+#define AUBIO_ARRAY(_t,_n)           (_t*)_mm_calloc((_n)*sizeof(_t), 16)
+#define AUBIO_MEMCPY(_dst,_src,_n)   memcpy(_dst,_src,_n)
+#define AUBIO_MEMSET(_dst,_src,_t)   memset(_dst,_src,_t)
+#define AUBIO_FREE(_p)               _mm_free(_p)
+#else
 #define AUBIO_MALLOC(_n)             malloc(_n)
-#define AUBIO_REALLOC(_p,_n)         realloc(_p,_n)
 #define AUBIO_NEW(_t)                (_t*)calloc(sizeof(_t), 1)
 #define AUBIO_ARRAY(_t,_n)           (_t*)calloc((_n)*sizeof(_t), 1)
 #define AUBIO_MEMCPY(_dst,_src,_n)   memcpy(_dst,_src,_n)
 #define AUBIO_MEMSET(_dst,_src,_t)   memset(_dst,_src,_t)
 #define AUBIO_FREE(_p)               free(_p)
-
+#endif
 
 /* file interface */
 #define AUBIO_FOPEN(_f,_m)           fopen(_f,_m)
