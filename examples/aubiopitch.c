@@ -24,6 +24,7 @@
 #define PROG_HAS_SILENCE 1
 #define PROG_HAS_JACK 1
 #include "parse_args.h"
+#include <time.h>
 
 aubio_pitch_t *o;
 aubio_wavetable_t *wavetable;
@@ -52,11 +53,15 @@ void process_print (void)
 }
 
 int main(int argc, char **argv) {
+  clock_t start, diff;
+  int msec;
   int ret = 0;
-
+  
+  pitch_method = "yin";
   buffer_size = 2048;
+  verbose = 1;
 
-  examples_common_init(argc,argv);
+  examples_common_init(argc, argv);
 
   verbmsg ("using source: %s at %dHz\n", source_uri, samplerate);
   verbmsg ("pitch method: %s, ", pitch_method);
@@ -79,7 +84,12 @@ int main(int argc, char **argv) {
   wavetable = new_aubio_wavetable (samplerate, hop_size);
   aubio_wavetable_play ( wavetable );
 
+  start = clock();
   examples_common_process((aubio_process_func_t)process_block,process_print);
+
+  diff = clock() - start;
+  msec = diff * 1000 / CLOCKS_PER_SEC;
+  printf("> Process ran %d sec %d ms", msec/1000, msec%1000);
 
   del_aubio_pitch (o);
   del_aubio_wavetable (wavetable);
