@@ -51,8 +51,8 @@ def options(ctx):
             default = "release",
             choices = ('debug', 'release'),
             dest = 'build_type',
-            help = 'whether to compile with (--build_type=release) or without (--build_type=debug) '\
-              ' compiler opimizations [default: release]')
+            help = 'whether to compile with (--build-type=release) or without (--build-type=debug) '\
+              'compiler opimizations [default: release]')
     add_option_enable_disable(ctx, 'fftw3f', default = False,
             help_str = 'compile with fftw3f instead of ooura (recommended)',
             help_disable_str = 'do not compile with fftw3f')
@@ -135,7 +135,7 @@ def configure(ctx):
         ctx.define('DEBUG', 1)
     else:
         ctx.define('NDEBUG', 1)
-    
+
     if ctx.env.CC_NAME != 'msvc':
         # enable debug symbols and configure warnings
         ctx.env.CFLAGS += ['-g', '-Wall', '-Wextra']
@@ -148,14 +148,14 @@ def configure(ctx):
         ctx.env.LINKFLAGS += ['/DEBUG', '/INCREMENTAL:NO']
         # configure warnings
         ctx.env.CFLAGS += ['/W4', '/D_CRT_SECURE_NO_WARNINGS']
-        # set optimization level and runtime libs 
+        # set optimization level and runtime libs
         if (ctx.options.build_type == "release"):
             ctx.env.CFLAGS += ['/Ox']
             ctx.env.CFLAGS += ['/MD']
         else:
             assert(ctx.options.build_type == "debug")
             ctx.env.CFLAGS += ['/MDd']
-                    
+
     ctx.check_cc(lib='m', uselib_store='M', mandatory=False)
 
     if target_platform not in ['win32', 'win64']:
