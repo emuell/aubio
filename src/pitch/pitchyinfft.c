@@ -151,7 +151,6 @@ aubio_pitchyinfft_do (aubio_pitchyinfft_t * p, const fvec_t * input, fvec_t * ou
     output->data[0] = 0.;
     return;
   }
-
   // choose lowest confident candidate first, to avoid choosing harmonics
   tau = 0;
   for (l = 1; l < yin->length; l++) {
@@ -161,20 +160,19 @@ aubio_pitchyinfft_do (aubio_pitchyinfft_t * p, const fvec_t * input, fvec_t * ou
       break;
     }
   }
-  // find local min around current pick to sharpen the results
+  // find local min to sharpen the results by seeking rightwards by max a note
   const uint_t LOCAL_NOTE_SEEK_RANGE = 1;
   const smpl_t note = aubio_bintomidi (tau, p->samplerate, p->fftout->length);
-  const uint_t startbin = MAX (0, (uint_t)aubio_miditobin (note - LOCAL_NOTE_SEEK_RANGE,
-    p->samplerate, p->fftout->length));
-  const uint_t endbin = MIN (yin->length, (uint_t)(aubio_miditobin (note + LOCAL_NOTE_SEEK_RANGE,
+  const uint_t nextnotesbin = MIN (yin->length, (uint_t)(aubio_miditobin (note + LOCAL_NOTE_SEEK_RANGE,
     p->samplerate, p->fftout->length) + 0.5));
-  tmp = yin->data[tau];
-  for (l = startbin; l < endbin; l++) {
-    if (yin->data[l] < tmp ) {
-      tmp = yin->data[l];
+  for (l = tau + 1; l <= nextnotesbin; l++) {
+    if (yin->data[l] < yin->data[l - 1]) {
       tau = l;
+    } else {
+      break;
     }
   }
+
   output->data[0] = fvec_quadratic_peak_pos(yin, tau);
 }
 
