@@ -6,7 +6,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceRoot}/build/examples/aubiopitch.exe",
-      "args": ["${workspaceRoot}/tests/audio/SineSweep.wav"],
+      "args": ["${workspaceRoot}/tests/audio/PureSine_C-7_to_C-8.wav"],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],
