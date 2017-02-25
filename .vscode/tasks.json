@@ -10,7 +10,7 @@
   "tasks": [
     {
       "taskName": "configure",
-      "args": ["--disable-docs"]
+      "args": ["--build-type=debug", "--disable-docs"]
     },
     {
       "taskName": "clean",
