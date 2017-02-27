@@ -635,7 +635,7 @@ aubio_init (void)
 #ifdef HAVE_INTEL_IPP
   IppStatus status = ippInit();
   if (status != ippStsNoErr) {
-    errmsg ("Error: failed to initialize Intel IPP - status %d\n", status);
+    fprintf (stderr, "Error: failed to initialize Intel IPP - status %d\n", status);
     exit (1);
   }
 #endif
