@@ -31,6 +31,10 @@
 #include "jackio.h"
 #endif /* HAVE_JACK */
 
+#ifdef HAVE_INTEL_IPP
+#include <ippcore.h>
+#endif /* HAVE_INTEL_IPP */
+
 int verbose = 0;
 int usejack = 0;
 // input / output
@@ -85,6 +89,8 @@ void examples_common_process (aubio_process_func_t process_func,
 
 void examples_common_init (int argc, char **argv)
 {
+  /* initialize library */
+  aubio_init ();
 
   /* parse command line arguments */
   parse_args (argc, argv);

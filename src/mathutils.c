@@ -25,6 +25,10 @@
 #include "mathutils.h"
 #include "musicutils.h"
 
+#ifdef HAVE_INTEL_IPP // using INTEL IPP
+#include <ippcore.h>
+#endif
+
 /** Window types */
 typedef enum
 {
@@ -550,6 +554,17 @@ aubio_next_power_of_two (uint_t a)
   return i;
 }
 
+uint_t
+aubio_power_of_two_order (uint_t a)
+{
+  int order = 0; 
+  int temp = aubio_next_power_of_two(a);
+  while (temp >>= 1) {
+    ++order;
+  }
+  return order;
+}
+
 smpl_t
 aubio_db_spl (const fvec_t * o)
 {
@@ -611,6 +626,19 @@ aubio_autocorr (const fvec_t * input, fvec_t * output)
     }
     acf[i] = tmp / (smpl_t) (length - i);
   }
+}
+
+void
+aubio_init (void)
+{
+/* initialize intel IPP */
+#ifdef HAVE_INTEL_IPP
+  IppStatus status = ippInit();
+  if (status != ippStsNoErr) {
+    errmsg ("Error: failed to initialize Intel IPP - status %d\n", status);
+    exit (1);
+  }
+#endif
 }
 
 void
