@@ -31,6 +31,9 @@ LIB_VERSION = '.'.join ([str(x) for x in [
 top = '.'
 out = 'build'
 
+
+### options
+
 def add_option_enable_disable(ctx, name, default = None,
         help_str = None, help_disable_str = None):
     if help_str == None:
@@ -59,6 +62,9 @@ def options(ctx):
     add_option_enable_disable(ctx, 'fftw3', default = False,
             help_str = 'compile with fftw3 instead of ooura',
             help_disable_str = 'do not compile with fftw3')
+    add_option_enable_disable(ctx, 'intelipp', default = None,
+            help_str = 'use Intel IPP libraries (auto)',
+            help_disable_str = 'do not use Intel IPP libraries')
     add_option_enable_disable(ctx, 'complex', default = False,
             help_str ='compile with C99 complex',
             help_disable_str = 'do not use C99 complex (default)' )
@@ -110,6 +116,8 @@ def options(ctx):
     ctx.load('waf_unit_test')
     ctx.load('gnu_dirs')
 
+### configure
+
 def configure(ctx):
     from waflib import Options
     ctx.load('compiler_c')
@@ -148,13 +156,17 @@ def configure(ctx):
         ctx.env.LINKFLAGS += ['/DEBUG', '/INCREMENTAL:NO']
         # configure warnings
         ctx.env.CFLAGS += ['/W4', '/D_CRT_SECURE_NO_WARNINGS']
+        # ignore "possible loss of data" warnings
+        ctx.env.CFLAGS += ['/wd4305', '/wd4244', '/wd4245', '/wd4267']
+        # ignore "unreferenced formal parameter" warnings
+        ctx.env.CFLAGS += ['/wd4100']
         # set optimization level and runtime libs
         if (ctx.options.build_type == "release"):
             ctx.env.CFLAGS += ['/Ox']
-            ctx.env.CFLAGS += ['/MD']
+            ctx.env.CFLAGS += ['/MT']
         else:
             assert(ctx.options.build_type == "debug")
-            ctx.env.CFLAGS += ['/MDd']
+            ctx.env.CFLAGS += ['/MTd']
 
     ctx.check_cc(lib='m', uselib_store='M', mandatory=False)
 
@@ -251,7 +263,19 @@ def configure(ctx):
         ctx.check(header_name='complex.h')
     else:
         ctx.msg('Checking if complex.h is enabled', 'no')
-
+    
+    # check for Intel IPP
+    if (ctx.options.enable_intelipp != False):
+        if (ctx.check(header_name=['ippcore.h', 'ippvm.h', 'ipps.h'], mandatory = False) and
+            ctx.check(lib=['ippcore', 'ippvm', 'ipps'], uselib_store='INTEL_IPP', mandatory = False)):
+            ctx.msg('Checking if Intel IPP is available', 'yes')
+            ctx.define('HAVE_INTEL_IPP', 1)
+            if ctx.env.CC_NAME == 'msvc':
+                # force linking multi-threaded static IPP libraries on Windows with msvc
+                ctx.define('_IPP_SEQUENTIAL_STATIC', 1)
+        else:
+            ctx.msg('Checking if Intel IPP is available', 'no')
+    
     # check for fftw3
     if (ctx.options.enable_fftw3 != False or ctx.options.enable_fftw3f != False):
         # one of fftwf or fftw3f
@@ -275,13 +299,15 @@ def configure(ctx):
                         mandatory = ctx.options.enable_fftw3)
         ctx.define('HAVE_FFTW3', 1)
 
-    # fftw not enabled, use vDSP or ooura
+    # fftw not enabled, use vDSP, intelIPP or ooura
     if 'HAVE_FFTW3F' in ctx.env.define_key:
         ctx.msg('Checking for FFT implementation', 'fftw3f')
     elif 'HAVE_FFTW3' in ctx.env.define_key:
         ctx.msg('Checking for FFT implementation', 'fftw3')
     elif 'HAVE_ACCELERATE' in ctx.env.define_key:
         ctx.msg('Checking for FFT implementation', 'vDSP')
+    elif 'HAVE_INTEL_IPP' in ctx.env.define_key:
+        ctx.msg('Checking for FFT implementation', 'Intel IPP')
     else:
         ctx.msg('Checking for FFT implementation', 'ooura')
 
@@ -382,6 +408,9 @@ def configure(ctx):
         except ctx.errors.ConfigurationError:
           ctx.to_log('sphinx-build was not found (ignoring)')
 
+
+### build
+
 def build(bld):
     bld.env['VERSION'] = VERSION
     bld.env['LIB_VERSION'] = LIB_VERSION
@@ -401,6 +430,9 @@ def build(bld):
     txt2man(bld)
     doxygen(bld)
     sphinx(bld)
+
+
+### txt2man
 
 def txt2man(bld):
     # build manpages from txt files using txt2man
@@ -422,6 +454,9 @@ def txt2man(bld):
                 )
         bld( source = bld.path.ant_glob('doc/*.txt') )
 
+
+### doxygen
+
 def doxygen(bld):
     # build documentation from source files using doxygen
     if bld.env['DOXYGEN']:
@@ -432,6 +467,9 @@ def doxygen(bld):
                 bld.path.ant_glob('doc/web/html/**'),
                 cwd = bld.path.find_dir ('doc/web'),
                 relative_trick = True)
+
+
+### sphinx
 
 def sphinx(bld):
     # build documentation from source files using sphinx-build
@@ -445,6 +483,8 @@ def sphinx(bld):
                 bld.path.ant_glob('doc/_build/html/**'),
                 cwd = bld.path.find_dir('doc/_build/html'),
                 relative_trick = True)
+
+### build rules
 
 # register the previous rules as build rules
 from waflib.Build import BuildContext
@@ -465,6 +505,9 @@ class build_doxygen(BuildContext):
     cmd = 'doxygen'
     fun = 'doxygen'
 
+
+### shutdown
+
 def shutdown(bld):
     from waflib import Logs
     if bld.options.target_platform in ['ios', 'iosimulator']:
@@ -472,6 +515,8 @@ def shutdown(bld):
         Logs.pprint('RED', msg)
         msg ='   Paul Brossier <piem@aubio.org>'
         Logs.pprint('RED', msg)
+
+### dist
 
 def dist(ctx):
     ctx.excl  = ' **/.waf* **/*~ **/*.pyc **/*.swp **/*.swo **/*.swn **/.lock-w* **/.git*'
