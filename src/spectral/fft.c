@@ -485,7 +485,8 @@ void aubio_fft_get_phas(aubio_fft_t *s, const fvec_t * compspec, cvec_t * spectr
 
 #ifdef INTEL_IPP_FFT // using Intel IPP FFT
   uint_t i;
-  
+  smpl_t epsilon = 0.000001;
+
   // convert from real imag  [ r0, 0, ..., rN, iN-1, .., i2, i1, iN-1] to complex format
   s->complexOut[0].re = compspec->data[0];
   s->complexOut[0].im = 0;
@@ -494,6 +495,13 @@ void aubio_fft_get_phas(aubio_fft_t *s, const fvec_t * compspec, cvec_t * spectr
   for (i = 1; i < spectrum->length - 1; i++) {
     s->complexOut[i].re = compspec->data[i];
     s->complexOut[i].im = compspec->data[compspec->length - i];
+    // reduce noise (very small numbers < epsilon) for atan2
+    if (ABS(s->complexOut[i].re) < epsilon) {
+      s->complexOut[i].re = 0.0;
+    }
+    if (ABS(s->complexOut[i].im) < epsilon) {
+      s->complexOut[i].im = 0.0;
+    }
   }
   
 #if HAVE_AUBIO_DOUBLE
@@ -506,15 +514,26 @@ void aubio_fft_get_phas(aubio_fft_t *s, const fvec_t * compspec, cvec_t * spectr
   }
 
 #else                 // NOT using Intel IPP
-  uint_t i;
+  uint_t i; smpl_t img; smpl_t real;
+  smpl_t epsilon = 0.000001;
+
   if (compspec->data[0] < 0) {
     spectrum->phas[0] = PI;
   } else {
     spectrum->phas[0] = 0.;
   }
+
   for (i=1; i < spectrum->length - 1; i++) {
-    spectrum->phas[i] = ATAN2(compspec->data[compspec->length-i],
-        compspec->data[i]);
+    img = compspec->data[compspec->length - i];
+    real = compspec->data[i];
+    // reduce noise (very small numbers < epsilon) for atan2
+    if ( ABS( img ) < epsilon ) {
+      img = 0.0;
+    }
+    if ( ABS( real ) < epsilon ) {
+      real = 0.0;
+    }
+    spectrum->phas[i] = ATAN2(img, real);
   }
   if (compspec->data[compspec->length/2] < 0) {
     spectrum->phas[spectrum->length - 1] = PI;
