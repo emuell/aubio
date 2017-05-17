@@ -25,8 +25,10 @@
 #include "mathutils.h"
 #include "musicutils.h"
 
-#ifdef HAVE_INTEL_IPP // using INTEL IPP
+#if defined HAVE_INTEL_IPP
 #include <ippcore.h>
+#include <ippvm.h>
+#include <ipps.h>
 #endif
 
 /** Window types */
@@ -158,45 +160,65 @@ smpl_t
 fvec_mean (fvec_t * s)
 {
   smpl_t tmp = 0.0;
-#ifndef HAVE_ACCELERATE
+#if defined(HAVE_INTEL_IPP)
+  #if HAVE_AUBIO_DOUBLE
+    ippsMean_64f(s->data, (int)s->length, &tmp);
+  #else
+    ippsMean_32f(s->data, (int)s->length, &tmp, ippAlgHintFast);
+  #endif
+    return tmp;
+#elif defined(HAVE_ACCELERATE)
+  aubio_vDSP_meanv(s->data, 1, &tmp, s->length);
+  return tmp;
+#else
   uint_t j;
   for (j = 0; j < s->length; j++) {
     tmp += s->data[j];
   }
-  return tmp / (smpl_t) (s->length);
-#else
-  aubio_vDSP_meanv(s->data, 1, &tmp, s->length);
-  return tmp;
-#endif /* HAVE_ACCELERATE */
+  return tmp / (smpl_t)(s->length);
+#endif
 }
 
 smpl_t
 fvec_sum (fvec_t * s)
 {
   smpl_t tmp = 0.0;
-#ifndef HAVE_ACCELERATE
+#if defined(HAVE_INTEL_IPP)
+  #if HAVE_AUBIO_DOUBLE
+    ippsSum_64f(s->data, (int)s->length, &tmp);
+  #else
+    ippsSum_32f(s->data, (int)s->length, &tmp, ippAlgHintFast);
+  #endif
+#elif defined(HAVE_ACCELERATE)
+  aubio_vDSP_sve(s->data, 1, &tmp, s->length);
+#else
   uint_t j;
   for (j = 0; j < s->length; j++) {
     tmp += s->data[j];
   }
-#else
-  aubio_vDSP_sve(s->data, 1, &tmp, s->length);
-#endif /* HAVE_ACCELERATE */
+#endif
   return tmp;
 }
 
 smpl_t
 fvec_max (fvec_t * s)
 {
-#ifndef HAVE_ACCELERATE
+#if defined(HAVE_INTEL_IPP)
+  smpl_t tmp = 0.;
+  #if HAVE_AUBIO_DOUBLE
+    ippsMax_64f( s->data, (int)s->length, &tmp);
+  #else
+    ippsMax_32f( s->data, (int)s->length, &tmp);
+#endif
+#elif defined(HAVE_ACCELERATE)
+  smpl_t tmp = 0.;
+  aubio_vDSP_maxv( s->data, 1, &tmp, s->length );
+#else
   uint_t j;
-  smpl_t tmp = 0.0;
-  for (j = 0; j < s->length; j++) {
+  smpl_t tmp = s->data[0];
+  for (j = 1; j < s->length; j++) {
     tmp = (tmp > s->data[j]) ? tmp : s->data[j];
   }
-#else
-  smpl_t tmp = 0.;
-  aubio_vDSP_maxv(s->data, 1, &tmp, s->length);
 #endif
   return tmp;
 }
@@ -204,15 +226,22 @@ fvec_max (fvec_t * s)
 smpl_t
 fvec_min (fvec_t * s)
 {
-#ifndef HAVE_ACCELERATE
-  uint_t j;
-  smpl_t tmp = s->data[0];
-  for (j = 0; j < s->length; j++) {
-    tmp = (tmp < s->data[j]) ? tmp : s->data[j];
-  }
-#else
+#if defined(HAVE_INTEL_IPP)
+  smpl_t tmp = 0.;
+  #if HAVE_AUBIO_DOUBLE
+    ippsMin_64f(s->data, (int)s->length, &tmp);
+  #else
+    ippsMin_32f(s->data, (int)s->length, &tmp);
+#endif
+#elif defined(HAVE_ACCELERATE)
   smpl_t tmp = 0.;
   aubio_vDSP_minv(s->data, 1, &tmp, s->length);
+#else
+  uint_t j;
+  smpl_t tmp = s->data[0];
+  for (j = 1; j < s->length; j++) {
+    tmp = (tmp < s->data[j]) ? tmp : s->data[j];
+  }
 #endif
   return tmp;
 }
@@ -229,10 +258,10 @@ fvec_min_elem (fvec_t * s)
   }
 #else
   smpl_t tmp = 0.;
-  uint_t pos = 0.;
-  aubio_vDSP_minvi(s->data, 1, &tmp, (vDSP_Length *)&pos, s->length);
+  vDSP_Length pos = 0;
+  aubio_vDSP_minvi(s->data, 1, &tmp, &pos, s->length);
 #endif
-  return pos;
+  return (uint_t)pos;
 }
 
 uint_t
@@ -247,10 +276,10 @@ fvec_max_elem (fvec_t * s)
   }
 #else
   smpl_t tmp = 0.;
-  uint_t pos = 0.;
-  aubio_vDSP_maxvi(s->data, 1, &tmp, (vDSP_Length *)&pos, s->length);
+  vDSP_Length pos = 0;
+  aubio_vDSP_maxvi(s->data, 1, &tmp, &pos, s->length);
 #endif
-  return pos;
+  return (uint_t)pos;
 }
 
 void
@@ -289,6 +318,25 @@ fvec_ishift (fvec_t * s)
   if (start != half) {
     for (j = 0; j < half; j++) {
       ELEM_SWAP (s->data[half], s->data[j]);
+    }
+  }
+}
+
+void fvec_push(fvec_t *in, smpl_t new_elem) {
+  uint_t i;
+  for (i = 0; i < in->length - 1; i++) {
+    in->data[i] = in->data[i + 1];
+  }
+  in->data[in->length - 1] = new_elem;
+}
+
+void fvec_clamp(fvec_t *in, smpl_t absmax) {
+  uint_t i;
+  for (i = 0; i < in->length; i++) {
+    if (in->data[i] > 0 && in->data[i] > ABS(absmax)) {
+      in->data[i] = absmax;
+    } else if (in->data[i] < 0 && in->data[i] < -ABS(absmax)) {
+      in->data[i] = -absmax;
     }
   }
 }
