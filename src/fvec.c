@@ -68,7 +68,9 @@ void fvec_print(const fvec_t *s) {
 void fvec_set_all (fvec_t *s, smpl_t val) {
 #if defined(HAVE_INTEL_IPP)
   #if HAVE_AUBIO_DOUBLE
+    ippsSet_64f(val, s->data, (int)s->length);
   #else
+    ippsSet_32f(val, s->data, (int)s->length);
   #endif
 #elif defined(HAVE_ATLAS)
   aubio_catlas_set(s->length, val, s->data, 1);
@@ -86,7 +88,9 @@ void fvec_set_all (fvec_t *s, smpl_t val) {
 void fvec_zeros(fvec_t *s) {
 #if defined(HAVE_INTEL_IPP)
   #if HAVE_AUBIO_DOUBLE
+    ippsZero_64f(s->data, (int)s->length);
   #else
+    ippsZero_32f(s->data, (int)s->length);
   #endif
 #elif defined(HAVE_ACCELERATE)
   aubio_vDSP_vclr(s->data, 1, s->length);
@@ -112,7 +116,9 @@ void fvec_weight(fvec_t *s, const fvec_t *weight) {
   uint_t length = MIN(s->length, weight->length);
 #if defined(HAVE_INTEL_IPP)
   #if HAVE_AUBIO_DOUBLE
+    ippsMul_64f(s->data, weight->data, s->data, (int)length);
   #else
+    ippsMul_32f(s->data, weight->data, s->data, (int)length);
   #endif
 #elif defined(HAVE_ACCELERATE) 
   aubio_vDSP_vmul( s->data, 1, weight->data, 1, s->data, 1, length );
@@ -128,7 +134,9 @@ void fvec_weighted_copy(const fvec_t *in, const fvec_t *weight, fvec_t *out) {
   uint_t length = MIN(in->length, MIN(out->length, weight->length));
 #if defined(HAVE_INTEL_IPP)
   #if HAVE_AUBIO_DOUBLE
+    ippsMul_64f(in->data, weight->data, out->data, (int)length);
   #else
+    ippsMul_32f(in->data, weight->data, out->data, (int)length);
   #endif
 #elif defined(HAVE_ACCELERATE) 
   aubio_vDSP_vmul(in->data, 1, weight->data, 1, out->data, 1, length);
@@ -148,7 +156,9 @@ void fvec_copy(const fvec_t *s, fvec_t *t) {
   }
 #if defined(HAVE_INTEL_IPP)
   #if HAVE_AUBIO_DOUBLE
+    ippsCopy_64f(s->data, t->data, (int)s->length);
   #else
+    ippsCopy_32f(s->data, t->data, (int)s->length);
   #endif
 #elif defined(HAVE_ATLAS)
   aubio_cblas_copy(s->length, s->data, 1, t->data, 1);
