@@ -114,6 +114,7 @@ pthread_mutex_t aubio_fftw_mutex = PTHREAD_MUTEX_INITIALIZER;
 #elif defined HAVE_INTEL_IPP // using INTEL IPP
 
 #include <ippcore.h>
+#include <ippvm.h>
 #include <ipps.h>
 
 #else // using OOURA
@@ -446,9 +447,9 @@ void aubio_fft_rdo_complex(aubio_fft_t * s, const fvec_t * compspec, fvec_t * ou
   }
 #if HAVE_AUBIO_DOUBLE
   // apply fft
-  ippsFFTInv_CCSToR_64f(s->complexOut, output->data, s->fftSpec, s->memBuffer);
+  ippsFFTInv_CCSToR_64f((const Ipp64f *)s->complexOut, output->data, s->fftSpec, s->memBuffer);
   // apply scaling
-  ippsMulC_64f((const Ip642f *)output->data, 1.0 / s->winsize, output->data, s->fft_size);
+  ippsMulC_64f(output->data, 1.0 / s->winsize, output->data, s->fft_size);
 #else
   // apply fft
   ippsFFTInv_CCSToR_32f((const Ipp32f *)s->complexOut, output->data, s->fftSpec, s->memBuffer);
