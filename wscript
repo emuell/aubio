@@ -14,19 +14,10 @@ import sys
 
 APPNAME = 'aubio'
 
-# source VERSION
-for l in open('VERSION').readlines(): exec (l.strip())
+from this_version import *
 
-VERSION = '.'.join ([str(x) for x in [
-    AUBIO_MAJOR_VERSION,
-    AUBIO_MINOR_VERSION,
-    AUBIO_PATCH_VERSION
-    ]]) + AUBIO_VERSION_STATUS
-
-LIB_VERSION = '.'.join ([str(x) for x in [
-    LIBAUBIO_LT_CUR,
-    LIBAUBIO_LT_REV,
-    LIBAUBIO_LT_AGE]])
+VERSION = get_aubio_version()
+LIB_VERSION = get_libaubio_version()
 
 top = '.'
 out = 'build'
@@ -133,7 +124,7 @@ def configure(ctx):
     ctx.check(header_name='stdarg.h')
     ctx.check(header_name='getopt.h', mandatory = False)
     ctx.check(header_name='unistd.h', mandatory = False)
-    
+
     target_platform = sys.platform
     if ctx.options.target_platform:
         target_platform = ctx.options.target_platform
@@ -145,11 +136,14 @@ def configure(ctx):
         ctx.define('NDEBUG', 1)
 
     if ctx.env.CC_NAME != 'msvc':
+        if ctx.options.build_type == "debug":
+            # no optimization in debug mode
+            ctx.env.prepend_value('CFLAGS', ['-O0'])
+        else:
+            # default to -O2 in release mode
+            ctx.env.prepend_value('CFLAGS', ['-O2'])
         # enable debug symbols and configure warnings
-        ctx.env.CFLAGS += ['-g', '-Wall', '-Wextra']
-        if ctx.options.build_type == "release":
-            # set optimization level 
-            ctx.env.CFLAGS += ['-O2']
+        ctx.env.prepend_value('CFLAGS', ['-g', '-Wall', '-Wextra'])
     else:
         # enable debug symbols
         ctx.env.CFLAGS += ['/Z7', '/FS']
@@ -280,8 +274,8 @@ def configure(ctx):
     if (ctx.options.enable_fftw3 != False or ctx.options.enable_fftw3f != False):
         # one of fftwf or fftw3f
         if (ctx.options.enable_fftw3f != False):
-            ctx.check_cfg(package = 'fftw3f', atleast_version = '3.0.0',
-                    args = '--cflags --libs',
+            ctx.check_cfg(package = 'fftw3f',
+                    args = '--cflags --libs fftw3f >= 3.0.0',
                     mandatory = ctx.options.enable_fftw3f)
             if (ctx.options.enable_double == True):
                 ctx.msg('Warning',
@@ -290,12 +284,12 @@ def configure(ctx):
             # fftw3f disabled, take most sensible one according to
             # enable_double
             if (ctx.options.enable_double == True):
-                ctx.check_cfg(package = 'fftw3', atleast_version = '3.0.0',
-                        args = '--cflags --libs', mandatory =
-                        ctx.options.enable_fftw3)
+                ctx.check_cfg(package = 'fftw3',
+                        args = '--cflags --libs fftw3 >= 3.0.0.',
+                        mandatory = ctx.options.enable_fftw3)
             else:
-                ctx.check_cfg(package = 'fftw3f', atleast_version = '3.0.0',
-                        args = '--cflags --libs',
+                ctx.check_cfg(package = 'fftw3f',
+                        args = '--cflags --libs fftw3f >= 3.0.0',
                         mandatory = ctx.options.enable_fftw3)
         ctx.define('HAVE_FFTW3', 1)
 
@@ -313,8 +307,8 @@ def configure(ctx):
 
     # check for libsndfile
     if (ctx.options.enable_sndfile != False):
-        ctx.check_cfg(package = 'sndfile', atleast_version = '1.0.4',
-                args = '--cflags --libs',
+        ctx.check_cfg(package = 'sndfile',
+                args = '--cflags --libs sndfile >= 1.0.4',
                 mandatory = ctx.options.enable_sndfile)
 
     # check for libsamplerate
@@ -326,8 +320,8 @@ def configure(ctx):
             ctx.msg('Checking if using samplerate', 'no (disabled in double precision mode)',
                     color = 'YELLOW')
     if (ctx.options.enable_samplerate != False):
-        ctx.check_cfg(package = 'samplerate', atleast_version = '0.0.15',
-                args = '--cflags --libs',
+        ctx.check_cfg(package = 'samplerate',
+                args = '--cflags --libs samplerate >= 0.0.15',
                 mandatory = ctx.options.enable_samplerate)
 
     # check for jack
@@ -338,24 +332,45 @@ def configure(ctx):
 
     # check for libav
     if (ctx.options.enable_avcodec != False):
-        ctx.check_cfg(package = 'libavcodec', atleast_version = '54.35.0',
-                args = '--cflags --libs', uselib_store = 'AVCODEC',
+        ctx.check_cfg(package = 'libavcodec',
+                args = '--cflags --libs libavcodec >= 54.35.0',
+                uselib_store = 'AVCODEC',
                 mandatory = ctx.options.enable_avcodec)
-        ctx.check_cfg(package = 'libavformat', atleast_version = '52.3.0',
-                args = '--cflags --libs', uselib_store = 'AVFORMAT',
+        ctx.check_cfg(package = 'libavformat',
+                args = '--cflags --libs libavformat >= 52.3.0',
+                uselib_store = 'AVFORMAT',
                 mandatory = ctx.options.enable_avcodec)
-        ctx.check_cfg(package = 'libavutil', atleast_version = '52.3.0',
-                args = '--cflags --libs', uselib_store = 'AVUTIL',
+        ctx.check_cfg(package = 'libavutil',
+                args = '--cflags --libs libavutil >= 52.3.0',
+                uselib_store = 'AVUTIL',
                 mandatory = ctx.options.enable_avcodec)
-        ctx.check_cfg(package = 'libavresample', atleast_version = '1.0.1',
-                args = '--cflags --libs', uselib_store = 'AVRESAMPLE',
-                mandatory = ctx.options.enable_avcodec)
-        if all ( 'HAVE_' + i in ctx.env
-                for i in ['AVCODEC', 'AVFORMAT', 'AVUTIL', 'AVRESAMPLE'] ):
-            ctx.define('HAVE_LIBAV', 1)
-            ctx.msg('Checking for all libav libraries', 'yes')
+        ctx.check_cfg(package = 'libswresample',
+                args = '--cflags --libs libswresample >= 1.2.0',
+                uselib_store = 'SWRESAMPLE',
+                mandatory = False)
+        if 'HAVE_SWRESAMPLE' not in ctx.env:
+            ctx.check_cfg(package = 'libavresample',
+                    args = '--cflags --libs libavresample >= 1.0.1',
+                    uselib_store = 'AVRESAMPLE',
+                    mandatory = False)
+
+        msg_check = 'Checking for all libav libraries'
+        if 'HAVE_AVCODEC' not in ctx.env:
+            ctx.msg(msg_check, 'not found (missing avcodec)', color = 'YELLOW')
+        elif 'HAVE_AVFORMAT' not in ctx.env:
+            ctx.msg(msg_check, 'not found (missing avformat)', color = 'YELLOW')
+        elif 'HAVE_AVUTIL' not in ctx.env:
+            ctx.msg(msg_check, 'not found (missing avutil)', color = 'YELLOW')
+        elif 'HAVE_SWRESAMPLE' not in ctx.env and 'HAVE_AVRESAMPLE' not in ctx.env:
+            resample_missing = 'not found (avresample or swresample required)'
+            ctx.msg(msg_check, resample_missing, color = 'YELLOW')
         else:
-            ctx.msg('Checking for all libav libraries', 'not found', color = 'YELLOW')
+            ctx.msg(msg_check, 'yes')
+            if 'HAVE_SWRESAMPLE' in ctx.env:
+                ctx.define('HAVE_SWRESAMPLE', 1)
+            elif 'HAVE_AVRESAMPLE' in ctx.env:
+                ctx.define('HAVE_AVRESAMPLE', 1)
+            ctx.define('HAVE_LIBAV', 1)
 
     if (ctx.options.enable_wavread != False):
         ctx.define('HAVE_WAVREAD', 1)
@@ -440,6 +455,7 @@ def txt2man(bld):
         from waflib import TaskGen
         if 'MANDIR' not in bld.env:
             bld.env['MANDIR'] = bld.env['DATAROOTDIR'] + '/man'
+        bld.env.VERSION = VERSION
         rule_str = '${TXT2MAN} -t `basename ${TGT} | cut -f 1 -d . | tr a-z A-Z`'
         rule_str += ' -r ${PACKAGE}\\ ${VERSION} -P ${PACKAGE}'
         rule_str += ' -v ${PACKAGE}\\ User\\\'s\\ manual'
@@ -460,8 +476,12 @@ def txt2man(bld):
 def doxygen(bld):
     # build documentation from source files using doxygen
     if bld.env['DOXYGEN']:
-        bld( name = 'doxygen', rule = 'doxygen ${SRC} > /dev/null',
+        bld.env.VERSION = VERSION
+        rule = '( cat ${SRC} && echo PROJECT_NUMBER=${VERSION}; )'
+        rule += ' | doxygen - > /dev/null'
+        bld( name = 'doxygen', rule = rule,
                 source = 'doc/web.cfg',
+                target = '../doc/web/html/index.html',
                 cwd = 'doc')
         bld.install_files( '${DATAROOTDIR}' + '/doc/libaubio-doc',
                 bld.path.ant_glob('doc/web/html/**'),
@@ -475,8 +495,9 @@ def sphinx(bld):
     # build documentation from source files using sphinx-build
     # note: build in ../doc/_build/html, otherwise waf wont install unsigned files
     if bld.env['SPHINX']:
+        bld.env.VERSION = VERSION
         bld( name = 'sphinx',
-                rule = '${SPHINX} -b html -a -q `dirname ${SRC}` `dirname ${TGT}`',
+                rule = '${SPHINX} -b html -D release=${VERSION} -D version=${VERSION} -a -q `dirname ${SRC}` `dirname ${TGT}`',
                 source = 'doc/conf.py',
                 target = '../doc/_build/html/index.html')
         bld.install_files( '${DATAROOTDIR}' + '/doc/libaubio-doc/sphinx',
