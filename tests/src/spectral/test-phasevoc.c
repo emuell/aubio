@@ -43,6 +43,7 @@ int main (void)
   del_cvec(fftgrain);
   del_fvec(out);
   del_aubio_pvoc(pv);
+  
   aubio_cleanup();
 
   return 0;

@@ -35,6 +35,7 @@ int main (void)
   del_aubio_beattracking(tempo);
   del_fvec(in);
   del_fvec(out);
+  
   aubio_cleanup();
 
   return 0;

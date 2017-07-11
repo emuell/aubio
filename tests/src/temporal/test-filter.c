@@ -31,6 +31,7 @@ int main (void)
   del_fvec (in);
   del_fvec (out);
   del_aubio_filter (o);
+  
   aubio_cleanup ();
 
   return 0;

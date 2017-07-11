@@ -40,6 +40,7 @@ int main (void)
 
   del_cvec (in);
   del_fvec (out);
+  
   aubio_cleanup ();
 
   return 0;

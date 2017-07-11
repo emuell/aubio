@@ -45,6 +45,8 @@ beach:
   del_fvec(in);
   del_cvec(fftgrain);
   del_fvec(out);
+
   aubio_cleanup();
+  
   return return_code;
 }

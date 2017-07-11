@@ -18,28 +18,9 @@ Quick links
 * :ref:`develop`
 * :ref:`building`
 
-Current status
-==============
+.. only:: devel
 
-.. image:: https://travis-ci.org/aubio/aubio.svg?branch=master
-   :target: https://travis-ci.org/aubio/aubio
-   :alt: Travis build status
-
-.. image:: https://ci.appveyor.com/api/projects/status/f3lhy3a57rkgn5yi?svg=true
-   :target: https://ci.appveyor.com/project/piem/aubio/
-   :alt: Appveyor build status
-
-.. image:: https://landscape.io/github/aubio/aubio/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/aubio/aubio/master
-   :alt: Landscape code health
-
-.. image:: https://readthedocs.org/projects/aubio/badge/?version=latest
-   :target: https://aubio.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation status
-
-.. image:: https://img.shields.io/github/commits-since/aubio/aubio/0.4.3.svg?maxAge=2592000
-   :target: https://github.com/aubio/aubio
-   :alt: Commits since last release
+    .. include:: statuslinks.rst
 
 Project pages
 =============
@@ -81,27 +62,6 @@ aubio provides several algorithms and routines, including:
 The name aubio comes from *audio* with a typo: some errors are likely to be
 found in the results.
 
-Copyright
-=========
-
-Copyright © 2003-2016 Paul Brossier <piem@aubio.org>
-
-License
-=======
-
-aubio is a `free <http://www.debian.org/intro/free>`_ and `open source
-<http://www.opensource.org/docs/definition.php>`_ software; **you** can
-redistribute it and/or modify it under the terms of the `GNU
-<https://www.gnu.org/>`_ `General Public License
-<https://www.gnu.org/licenses/gpl.html>`_ as published by the `Free Software
-Foundation <https://fsf.org>`_, either version 3 of the License, or (at your
-option) any later version.
-
-.. note::
-
-   aubio is not MIT or BSD licensed. Contact the author if you need it in your
-   commercial product.
-
 Content
 =======
 
@@ -112,3 +72,4 @@ Content
    python_module
    cli
    develop
+   about

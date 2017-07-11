@@ -62,6 +62,7 @@ new_aubio_pitchyinfft (uint_t samplerate, uint_t bufsize)
   aubio_pitchyinfft_t *p = AUBIO_NEW (aubio_pitchyinfft_t);
   p->winput = new_fvec (bufsize);
   p->fft = new_aubio_fft (bufsize);
+  if (!p->fft) goto beach;
   p->fftout = new_fvec (bufsize);
   p->sqrmag = new_fvec (bufsize);
   p->yinfft = new_fvec (bufsize / 2 + 1);
@@ -98,6 +99,11 @@ new_aubio_pitchyinfft (uint_t samplerate, uint_t bufsize)
   fvec_set_all (p->weight, 1.0);
 
   return p;
+
+beach:
+  if (p->winput) del_fvec(p->winput);
+  AUBIO_FREE(p);
+  return NULL;
 }
 
 void

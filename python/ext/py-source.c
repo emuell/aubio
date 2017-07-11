@@ -100,9 +100,10 @@ Py_source_new (PyTypeObject * pytype, PyObject * args, PyObject * kwds)
     return NULL;
   }
 
-  self->uri = "none";
+  self->uri = NULL;
   if (uri != NULL) {
-    self->uri = uri;
+    self->uri = (char_t *)malloc(sizeof(char_t) * (strnlen(uri, PATH_MAX) + 1));
+    strncpy(self->uri, uri, strnlen(uri, PATH_MAX) + 1);
   }
 
   self->samplerate = 0;
@@ -162,6 +163,9 @@ Py_source_del (Py_source *self, PyObject *unused)
   if (self->o) {
     del_aubio_source(self->o);
     free(self->c_mread_to.data);
+  }
+  if (self->uri) {
+    free(self->uri);
   }
   Py_XDECREF(self->read_to);
   Py_XDECREF(self->mread_to);
@@ -242,7 +246,7 @@ Pyaubio_source_get_channels (Py_source *self, PyObject *unused)
 static PyObject *
 Pyaubio_source_close (Py_source *self, PyObject *unused)
 {
-  aubio_source_close (self->o);
+  if (aubio_source_close(self->o) != 0) return NULL;
   Py_RETURN_NONE;
 }
 
@@ -272,6 +276,65 @@ Pyaubio_source_seek (Py_source *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+static char Pyaubio_source_enter_doc[] = "";
+static PyObject* Pyaubio_source_enter(Py_source *self, PyObject *unused) {
+  Py_INCREF(self);
+  return (PyObject*)self;
+}
+
+static char Pyaubio_source_exit_doc[] = "";
+static PyObject* Pyaubio_source_exit(Py_source *self, PyObject *unused) {
+  return Pyaubio_source_close(self, unused);
+}
+
+static PyObject* Pyaubio_source_iter(PyObject *self) {
+  Py_INCREF(self);
+  return (PyObject*)self;
+}
+
+static PyObject* Pyaubio_source_iter_next(Py_source *self) {
+  PyObject *done, *size;
+  if (self->channels == 1) {
+    done = Py_source_do(self, NULL);
+  } else {
+    done = Py_source_do_multi(self, NULL);
+  }
+  if (!PyTuple_Check(done)) {
+    PyErr_Format(PyExc_ValueError,
+        "error when reading source: not opened?");
+    return NULL;
+  }
+  size = PyTuple_GetItem(done, 1);
+  if (size != NULL && PyLong_Check(size)) {
+    if (PyLong_AsLong(size) == (long)self->hop_size) {
+      PyObject *vec = PyTuple_GetItem(done, 0);
+      return vec;
+    } else if (PyLong_AsLong(size) > 0) {
+      // short read, return a shorter array
+      PyArrayObject *shortread = (PyArrayObject*)PyTuple_GetItem(done, 0);
+      PyArray_Dims newdims;
+      PyObject *reshaped;
+      newdims.len = PyArray_NDIM(shortread);
+      newdims.ptr = PyArray_DIMS(shortread);
+      // mono or multiple channels?
+      if (newdims.len == 1) {
+        newdims.ptr[0] = PyLong_AsLong(size);
+      } else {
+        newdims.ptr[1] = PyLong_AsLong(size);
+      }
+      reshaped = PyArray_Newshape(shortread, &newdims, NPY_CORDER);
+      Py_DECREF(shortread);
+      return reshaped;
+    } else {
+      PyErr_SetNone(PyExc_StopIteration);
+      return NULL;
+    }
+  } else {
+    PyErr_SetNone(PyExc_StopIteration);
+    return NULL;
+  }
+}
+
 static PyMethodDef Py_source_methods[] = {
   {"get_samplerate", (PyCFunction) Pyaubio_source_get_samplerate,
     METH_NOARGS, Py_source_get_samplerate_doc},
@@ -285,6 +348,10 @@ static PyMethodDef Py_source_methods[] = {
     METH_NOARGS, Py_source_close_doc},
   {"seek", (PyCFunction) Pyaubio_source_seek,
     METH_VARARGS, Py_source_seek_doc},
+  {"__enter__", (PyCFunction)Pyaubio_source_enter, METH_NOARGS,
+    Pyaubio_source_enter_doc},
+  {"__exit__",  (PyCFunction)Pyaubio_source_exit, METH_VARARGS,
+    Pyaubio_source_exit_doc},
   {NULL} /* sentinel */
 };
 
@@ -314,8 +381,8 @@ PyTypeObject Py_sourceType = {
   0,
   0,
   0,
-  0,
-  0,
+  Pyaubio_source_iter,
+  (unaryfunc)Pyaubio_source_iter_next,
   Py_source_methods,
   Py_source_members,
   0,

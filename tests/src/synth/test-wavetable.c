@@ -64,6 +64,7 @@ int main (int argc, char **argv)
   del_aubio_wavetable (wavetable);
   del_aubio_sink(sink);
   del_fvec(vec);
+  
   aubio_cleanup();
 
   return 0;
