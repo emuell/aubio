@@ -2,6 +2,8 @@
 
 int main (void)
 {
+  aubio_init();
+  
   uint_t samplerate = 16000; // samplerate of signal to filter
   uint_t win_s = 512; // fft size
   uint_t n_filters = 40; // number of filters

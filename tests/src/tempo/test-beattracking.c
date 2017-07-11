@@ -5,6 +5,8 @@
 
 int main (void)
 {
+  aubio_init();
+  
   uint_t i = 0;
   uint_t win_s = 1024; // window size
   fvec_t * in = new_fvec (win_s); // input buffer

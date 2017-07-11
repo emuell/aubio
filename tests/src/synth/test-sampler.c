@@ -3,6 +3,8 @@
 
 int main (int argc, char **argv)
 {
+  aubio_init();
+  
   sint_t err = 0;
 
   if (argc < 4) {

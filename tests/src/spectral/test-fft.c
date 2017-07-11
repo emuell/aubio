@@ -2,6 +2,8 @@
 
 int main (void)
 {
+  aubio_init();
+  
   int return_code = 0;
   uint_t i, n_iters = 100; // number of iterations
   uint_t win_s = 512; // window size

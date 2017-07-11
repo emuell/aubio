@@ -2,6 +2,7 @@
 
 int main (void)
 {
+  aubio_init();
   uint_t win_s = 512; // fft size
   uint_t n_filters = 40; // number of filters
   uint_t n_coefs = 13; // number of coefficients
