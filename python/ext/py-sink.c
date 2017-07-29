@@ -80,9 +80,10 @@ Py_sink_new (PyTypeObject * pytype, PyObject * args, PyObject * kwds)
     return NULL;
   }
 
-  self->uri = "none";
+  self->uri = NULL;
   if (uri != NULL) {
-    self->uri = uri;
+    self->uri = (char_t *)malloc(sizeof(char_t) * (strnlen(uri, PATH_MAX) + 1));
+    strncpy(self->uri, uri, strnlen(uri, PATH_MAX) + 1);
   }
 
   self->samplerate = Py_aubio_default_samplerate;
@@ -126,6 +127,9 @@ Py_sink_del (Py_sink *self, PyObject *unused)
 {
   del_aubio_sink(self->o);
   free(self->mwrite_data.data);
+  if (self->uri) {
+    free(self->uri);
+  }
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -199,10 +203,25 @@ Pyaubio_sink_close (Py_sink *self, PyObject *unused)
   Py_RETURN_NONE;
 }
 
+static char Pyaubio_sink_enter_doc[] = "";
+static PyObject* Pyaubio_sink_enter(Py_sink *self, PyObject *unused) {
+  Py_INCREF(self);
+  return (PyObject*)self;
+}
+
+static char Pyaubio_sink_exit_doc[] = "";
+static PyObject* Pyaubio_sink_exit(Py_sink *self, PyObject *unused) {
+  return Pyaubio_sink_close(self, unused);
+}
+
 static PyMethodDef Py_sink_methods[] = {
   {"do", (PyCFunction) Py_sink_do, METH_VARARGS, Py_sink_do_doc},
   {"do_multi", (PyCFunction) Py_sink_do_multi, METH_VARARGS, Py_sink_do_multi_doc},
   {"close", (PyCFunction) Pyaubio_sink_close, METH_NOARGS, Py_sink_close_doc},
+  {"__enter__", (PyCFunction)Pyaubio_sink_enter, METH_NOARGS,
+    Pyaubio_sink_enter_doc},
+  {"__exit__",  (PyCFunction)Pyaubio_sink_exit, METH_VARARGS,
+    Pyaubio_sink_exit_doc},
   {NULL} /* sentinel */
 };
 

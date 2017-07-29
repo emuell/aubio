@@ -225,10 +225,10 @@ fvec_min_elem (fvec_t * s)
   }
 #else
   smpl_t tmp = 0.;
-  uint_t pos = 0.;
-  aubio_vDSP_minvi(s->data, 1, &tmp, (vDSP_Length *)&pos, s->length);
+  vDSP_Length pos = 0;
+  aubio_vDSP_minvi(s->data, 1, &tmp, &pos, s->length);
 #endif
-  return pos;
+  return (uint_t)pos;
 }
 
 uint_t
@@ -243,10 +243,10 @@ fvec_max_elem (fvec_t * s)
   }
 #else
   smpl_t tmp = 0.;
-  uint_t pos = 0.;
-  aubio_vDSP_maxvi(s->data, 1, &tmp, (vDSP_Length *)&pos, s->length);
+  vDSP_Length pos = 0;
+  aubio_vDSP_maxvi(s->data, 1, &tmp, &pos, s->length);
 #endif
-  return pos;
+  return (uint_t)pos;
 }
 
 void
@@ -285,6 +285,25 @@ fvec_ishift (fvec_t * s)
   if (start != half) {
     for (j = 0; j < half; j++) {
       ELEM_SWAP (s->data[half], s->data[j]);
+    }
+  }
+}
+
+void fvec_push(fvec_t *in, smpl_t new_elem) {
+  uint_t i;
+  for (i = 0; i < in->length - 1; i++) {
+    in->data[i] = in->data[i + 1];
+  }
+  in->data[in->length - 1] = new_elem;
+}
+
+void fvec_clamp(fvec_t *in, smpl_t absmax) {
+  uint_t i;
+  for (i = 0; i < in->length; i++) {
+    if (in->data[i] > 0 && in->data[i] > ABS(absmax)) {
+      in->data[i] = absmax;
+    } else if (in->data[i] < 0 && in->data[i] < -ABS(absmax)) {
+      in->data[i] = -absmax;
     }
   }
 }

@@ -116,5 +116,13 @@ class aubio_sink_test_case(TestCase):
         g.close()
         del_tmp_sink_path(sink_path)
 
+    def test_read_with(self):
+        samplerate = 44100
+        sink_path = get_tmp_sink_path()
+        vec = fvec(128)
+        with sink(sink_path, samplerate) as g:
+            for _ in range(10):
+                g(vec, 128)
+
 if __name__ == '__main__':
     main()
