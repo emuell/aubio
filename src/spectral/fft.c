@@ -458,7 +458,7 @@ void aubio_fft_rdo_complex(aubio_fft_t * s, const fvec_t * compspec, fvec_t * ou
 #endif /* HAVE_AUBIO_DOUBLE */
 
 #else                         // using OOURA
-  smpl_t scale = 2.0 / s->winsize;
+  smpl_t scale = 1.0 / s->winsize;
   s->out[0] = compspec->data[0];
   s->out[1] = compspec->data[s->winsize / 2];
   for (i = 1; i < s->fft_size - 1; i++) {
